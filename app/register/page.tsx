@@ -3,52 +3,25 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, ArrowRight, Sparkles, Github, Chrome, Check } from "lucide-react";
+import { signIn } from "next-auth/react";
+import { Sparkles, ArrowRight, Chrome, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
-import { Checkbox } from "@/components/ui/checkbox";
 
 export default function RegisterPage() {
-  const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  const [agreedToTerms, setAgreedToTerms] = useState(false);
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-  });
+  const [error, setError] = useState<string | null>(null);
 
-  const passwordStrength = () => {
-    const { password } = formData;
-    if (password.length === 0) return { strength: 0, label: "" };
-    if (password.length < 6) return { strength: 1, label: "Weak" };
-    if (password.length < 10) return { strength: 2, label: "Medium" };
-    if (password.length >= 10 && /[A-Z]/.test(password) && /[0-9]/.test(password)) {
-      return { strength: 3, label: "Strong" };
-    }
-    return { strength: 2, label: "Medium" };
-  };
-
-  const { strength, label } = passwordStrength();
-
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!agreedToTerms) return;
+  const handleGoogleSignup = async () => {
+    setIsLoading(true);
+    setError(null);
     
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    router.push("/upload");
-  };
-
-  const handleSocialSignup = async (provider: string) => {
-    setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    router.push("/upload");
+    try {
+      await signIn("google", { callbackUrl: "/upload" });
+    } catch {
+      setError("Failed to initiate Google signup. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -153,163 +126,51 @@ export default function RegisterPage() {
             <CardHeader className="space-y-1 pb-6">
               <CardTitle className="text-2xl font-bold">Create an account</CardTitle>
               <CardDescription>
-                Enter your details to get started with JobLens AI
+                Sign up with your Google account to get started with JobLens AI
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Social Signup */}
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="h-11"
-                  onClick={() => handleSocialSignup("google")}
-                  disabled={isLoading}
-                >
-                  <Chrome className="w-4 h-4 mr-2" />
-                  Google
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-11"
-                  onClick={() => handleSocialSignup("github")}
-                  disabled={isLoading}
-                >
-                  <Github className="w-4 h-4 mr-2" />
-                  GitHub
-                </Button>
+              {/* Error Message */}
+              {error && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                  {error}
+                </div>
+              )}
+
+              {/* Google Signup */}
+              <Button
+                variant="outline"
+                className="w-full h-12 text-base"
+                onClick={handleGoogleSignup}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <motion.div
+                    className="w-5 h-5 border-2 border-foreground/30 border-t-foreground rounded-full"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  />
+                ) : (
+                  <>
+                    <Chrome className="w-5 h-5 mr-3" />
+                    Continue with Google
+                    <ArrowRight className="w-4 h-4 ml-auto" />
+                  </>
+                )}
+              </Button>
+
+              <div className="text-center text-sm text-muted-foreground">
+                <p>
+                  By signing up, you agree to our{" "}
+                  <Link href="/terms" className="text-accent hover:underline">
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/privacy" className="text-accent hover:underline">
+                    Privacy Policy
+                  </Link>
+                </p>
               </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <Separator className="w-full" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with email
-                  </span>
-                </div>
-              </div>
-
-              {/* Register Form */}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="name">Full Name</Label>
-                  <Input
-                    id="name"
-                    type="text"
-                    placeholder="John Doe"
-                    value={formData.name}
-                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                    required
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="name@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <Label htmlFor="password">Password</Label>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Create a strong password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                      className="h-11 pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                  
-                  {/* Password Strength Indicator */}
-                  {formData.password && (
-                    <div className="space-y-1">
-                      <div className="flex gap-1">
-                        {[1, 2, 3].map((level) => (
-                          <div
-                            key={level}
-                            className={`h-1 flex-1 rounded-full transition-colors ${
-                              strength >= level
-                                ? strength === 1
-                                  ? "bg-destructive"
-                                  : strength === 2
-                                  ? "bg-yellow-500"
-                                  : "bg-green-500"
-                                : "bg-muted"
-                            }`}
-                          />
-                        ))}
-                      </div>
-                      <p className={`text-xs ${
-                        strength === 1 ? "text-destructive" : 
-                        strength === 2 ? "text-yellow-500" : 
-                        strength === 3 ? "text-green-500" : ""
-                      }`}>
-                        {label}
-                      </p>
-                    </div>
-                  )}
-                </div>
-
-                <div className="flex items-start space-x-2">
-                  <Checkbox
-                    id="terms"
-                    checked={agreedToTerms}
-                    onCheckedChange={(checked) => setAgreedToTerms(checked as boolean)}
-                  />
-                  <label htmlFor="terms" className="text-sm text-muted-foreground leading-relaxed">
-                    I agree to the{" "}
-                    <Link href="/terms" className="text-accent hover:underline">
-                      Terms of Service
-                    </Link>{" "}
-                    and{" "}
-                    <Link href="/privacy" className="text-accent hover:underline">
-                      Privacy Policy
-                    </Link>
-                  </label>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full h-11 bg-foreground text-background hover:bg-foreground/90"
-                  disabled={isLoading || !agreedToTerms}
-                >
-                  {isLoading ? (
-                    <motion.div
-                      className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    />
-                  ) : (
-                    <>
-                      Create account
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </>
-                  )}
-                </Button>
-              </form>
 
               <p className="text-center text-sm text-muted-foreground">
                 Already have an account?{" "}

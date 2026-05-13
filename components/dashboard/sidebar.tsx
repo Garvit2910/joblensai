@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { signOut, useSession } from "next-auth/react";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
   Sparkles,
@@ -25,6 +27,17 @@ const navItems = [
 
 export function DashboardSidebar() {
   const pathname = usePathname();
+  const { data: session } = useSession();
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <aside className="fixed left-0 top-0 bottom-0 w-64 border-r border-border bg-card hidden lg:flex flex-col">
@@ -39,6 +52,22 @@ export function DashboardSidebar() {
           </span>
         </Link>
       </div>
+
+      {/* User Info */}
+      {session?.user && (
+        <div className="p-4 border-b border-border">
+          <div className="flex items-center gap-3">
+            <Avatar className="h-10 w-10">
+              <AvatarImage src={session.user.image || undefined} />
+              <AvatarFallback>{getInitials(session.user.name)}</AvatarFallback>
+            </Avatar>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-medium truncate">{session.user.name}</p>
+              <p className="text-xs text-muted-foreground truncate">{session.user.email}</p>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Navigation */}
       <nav className="flex-1 p-4 space-y-1">
@@ -66,13 +95,13 @@ export function DashboardSidebar() {
 
       {/* Footer */}
       <div className="p-4 border-t border-border">
-        <Link
-          href="/"
-          className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+        <button
+          onClick={() => signOut({ callbackUrl: "/" })}
+          className="flex items-center gap-3 px-4 py-3 rounded-xl text-sm font-medium text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors w-full"
         >
           <LogOut className="h-5 w-5" />
           Sign Out
-        </Link>
+        </button>
       </div>
     </aside>
   );

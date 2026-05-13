@@ -2,13 +2,27 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useSession, signOut } from "next-auth/react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   Sparkles,
   Menu,
   X,
   ChevronRight,
+  LayoutDashboard,
+  User,
+  Bell,
+  LogOut,
+  Settings,
 } from "lucide-react";
 
 const navLinks = [
@@ -19,6 +33,19 @@ const navLinks = [
 
 export function Navbar() {
   const [isOpen, setIsOpen] = useState(false);
+  const { data: session, status } = useSession();
+  const isLoading = status === "loading";
+  const isLoggedIn = status === "authenticated";
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <motion.header
@@ -56,19 +83,87 @@ export function Navbar() {
               ))}
             </div>
 
-            {/* CTA Buttons */}
+            {/* CTA Buttons - Desktop */}
             <div className="hidden md:flex items-center gap-3">
-              <Link href="/upload">
-                <Button variant="ghost" size="sm">
-                  Sign In
-                </Button>
-              </Link>
-              <Link href="/upload">
-                <Button size="sm" className="rounded-xl gap-2">
-                  Get Started
-                  <ChevronRight className="h-4 w-4" />
-                </Button>
-              </Link>
+              {isLoading ? (
+                <div className="h-9 w-20 animate-pulse rounded-lg bg-muted" />
+              ) : isLoggedIn ? (
+                <>
+                  <Link href="/dashboard">
+                    <Button variant="ghost" size="sm" className="gap-2">
+                      <LayoutDashboard className="h-4 w-4" />
+                      Dashboard
+                    </Button>
+                  </Link>
+                  <DropdownMenu>
+                    <DropdownMenuTrigger asChild>
+                      <Button variant="ghost" size="sm" className="gap-2 px-2">
+                        <Avatar className="h-7 w-7">
+                          <AvatarImage src={session.user?.image || undefined} />
+                          <AvatarFallback className="text-xs">
+                            {getInitials(session.user?.name)}
+                          </AvatarFallback>
+                        </Avatar>
+                      </Button>
+                    </DropdownMenuTrigger>
+                    <DropdownMenuContent align="end" className="w-56">
+                      <div className="px-2 py-1.5">
+                        <p className="text-sm font-medium">{session.user?.name}</p>
+                        <p className="text-xs text-muted-foreground truncate">
+                          {session.user?.email}
+                        </p>
+                      </div>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard/profile" className="cursor-pointer">
+                          <User className="mr-2 h-4 w-4" />
+                          Profile
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard" className="cursor-pointer">
+                          <LayoutDashboard className="mr-2 h-4 w-4" />
+                          Dashboard
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard/notifications" className="cursor-pointer">
+                          <Bell className="mr-2 h-4 w-4" />
+                          Notifications
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuItem asChild>
+                        <Link href="/dashboard/settings" className="cursor-pointer">
+                          <Settings className="mr-2 h-4 w-4" />
+                          Settings
+                        </Link>
+                      </DropdownMenuItem>
+                      <DropdownMenuSeparator />
+                      <DropdownMenuItem
+                        onClick={() => signOut({ callbackUrl: "/" })}
+                        className="cursor-pointer text-destructive focus:text-destructive"
+                      >
+                        <LogOut className="mr-2 h-4 w-4" />
+                        Sign Out
+                      </DropdownMenuItem>
+                    </DropdownMenuContent>
+                  </DropdownMenu>
+                </>
+              ) : (
+                <>
+                  <Link href="/login">
+                    <Button variant="ghost" size="sm">
+                      Sign In
+                    </Button>
+                  </Link>
+                  <Link href="/register">
+                    <Button size="sm" className="rounded-xl gap-2">
+                      Get Started
+                      <ChevronRight className="h-4 w-4" />
+                    </Button>
+                  </Link>
+                </>
+              )}
             </div>
 
             {/* Mobile Menu Button */}
@@ -102,14 +197,66 @@ export function Navbar() {
                     </Link>
                   ))}
                   <div className="pt-2 flex flex-col gap-2">
-                    <Link href="/upload" onClick={() => setIsOpen(false)}>
-                      <Button variant="ghost" className="w-full justify-start">
-                        Sign In
-                      </Button>
-                    </Link>
-                    <Link href="/upload" onClick={() => setIsOpen(false)}>
-                      <Button className="w-full rounded-xl">Get Started</Button>
-                    </Link>
+                    {isLoading ? (
+                      <div className="h-10 animate-pulse rounded-lg bg-muted" />
+                    ) : isLoggedIn ? (
+                      <>
+                        <div className="flex items-center gap-3 px-4 py-2">
+                          <Avatar className="h-8 w-8">
+                            <AvatarImage src={session.user?.image || undefined} />
+                            <AvatarFallback className="text-xs">
+                              {getInitials(session.user?.name)}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="text-sm font-medium">{session.user?.name}</p>
+                            <p className="text-xs text-muted-foreground truncate max-w-[180px]">
+                              {session.user?.email}
+                            </p>
+                          </div>
+                        </div>
+                        <Link href="/dashboard/profile" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-2">
+                            <User className="h-4 w-4" />
+                            Profile
+                          </Button>
+                        </Link>
+                        <Link href="/dashboard" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-2">
+                            <LayoutDashboard className="h-4 w-4" />
+                            Dashboard
+                          </Button>
+                        </Link>
+                        <Link href="/dashboard/notifications" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start gap-2">
+                            <Bell className="h-4 w-4" />
+                            Notifications
+                          </Button>
+                        </Link>
+                        <Button
+                          variant="ghost"
+                          className="w-full justify-start gap-2 text-destructive hover:text-destructive"
+                          onClick={() => {
+                            setIsOpen(false);
+                            signOut({ callbackUrl: "/" });
+                          }}
+                        >
+                          <LogOut className="h-4 w-4" />
+                          Sign Out
+                        </Button>
+                      </>
+                    ) : (
+                      <>
+                        <Link href="/login" onClick={() => setIsOpen(false)}>
+                          <Button variant="ghost" className="w-full justify-start">
+                            Sign In
+                          </Button>
+                        </Link>
+                        <Link href="/register" onClick={() => setIsOpen(false)}>
+                          <Button className="w-full rounded-xl">Get Started</Button>
+                        </Link>
+                      </>
+                    )}
                   </div>
                 </div>
               </motion.div>

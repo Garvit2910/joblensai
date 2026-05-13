@@ -3,7 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
+import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import { cn } from "@/lib/utils";
 import {
   Sparkles,
@@ -11,8 +13,6 @@ import {
   X,
   LayoutDashboard,
   Briefcase,
-  User,
-  Settings,
   TrendingUp,
   FileText,
   Bell,
@@ -30,6 +30,17 @@ const navItems = [
 export function DashboardHeader() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const pathname = usePathname();
+  const { data: session } = useSession();
+
+  const getInitials = (name: string | null | undefined) => {
+    if (!name) return "U";
+    return name
+      .split(" ")
+      .map((n) => n[0])
+      .join("")
+      .toUpperCase()
+      .slice(0, 2);
+  };
 
   return (
     <header className="sticky top-0 z-40 border-b border-border bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
@@ -70,9 +81,12 @@ export function DashboardHeader() {
           </Button>
 
           <Link href="/dashboard/profile">
-            <div className="w-10 h-10 rounded-xl bg-secondary flex items-center justify-center">
-              <User className="h-5 w-5" />
-            </div>
+            <Avatar className="h-10 w-10 rounded-xl">
+              <AvatarImage src={session?.user?.image || undefined} />
+              <AvatarFallback className="rounded-xl bg-secondary">
+                {getInitials(session?.user?.name)}
+              </AvatarFallback>
+            </Avatar>
           </Link>
         </div>
       </div>

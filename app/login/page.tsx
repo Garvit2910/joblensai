@@ -3,38 +3,31 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { Eye, EyeOff, ArrowRight, Sparkles, Github, Chrome } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { signIn } from "next-auth/react";
+import { Sparkles, ArrowRight, Chrome } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Separator } from "@/components/ui/separator";
 
 export default function LoginPage() {
   const router = useRouter();
-  const [showPassword, setShowPassword] = useState(false);
+  const searchParams = useSearchParams();
   const [isLoading, setIsLoading] = useState(false);
-  const [formData, setFormData] = useState({
-    email: "",
-    password: "",
-  });
+  const [error, setError] = useState<string | null>(null);
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsLoading(true);
-    
-    // Simulate login
-    await new Promise(resolve => setTimeout(resolve, 1500));
-    
-    // For demo purposes, redirect to dashboard
-    router.push("/dashboard");
-  };
+  const callbackUrl = searchParams.get("callbackUrl") || "/dashboard";
+  const errorParam = searchParams.get("error");
 
-  const handleSocialLogin = async (provider: string) => {
+  const handleGoogleLogin = async () => {
     setIsLoading(true);
-    await new Promise(resolve => setTimeout(resolve, 1000));
-    router.push("/dashboard");
+    setError(null);
+    
+    try {
+      await signIn("google", { callbackUrl });
+    } catch {
+      setError("Failed to initiate Google login. Please try again.");
+      setIsLoading(false);
+    }
   };
 
   return (
@@ -125,111 +118,54 @@ export default function LoginPage() {
             <CardHeader className="space-y-1 pb-6">
               <CardTitle className="text-2xl font-bold">Sign in</CardTitle>
               <CardDescription>
-                Enter your credentials to access your account
+                Sign in with your Google account to continue
               </CardDescription>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Social Login */}
-              <div className="grid grid-cols-2 gap-3">
-                <Button
-                  variant="outline"
-                  className="h-11"
-                  onClick={() => handleSocialLogin("google")}
-                  disabled={isLoading}
-                >
-                  <Chrome className="w-4 h-4 mr-2" />
-                  Google
-                </Button>
-                <Button
-                  variant="outline"
-                  className="h-11"
-                  onClick={() => handleSocialLogin("github")}
-                  disabled={isLoading}
-                >
-                  <Github className="w-4 h-4 mr-2" />
-                  GitHub
-                </Button>
-              </div>
-
-              <div className="relative">
-                <div className="absolute inset-0 flex items-center">
-                  <Separator className="w-full" />
-                </div>
-                <div className="relative flex justify-center text-xs uppercase">
-                  <span className="bg-background px-2 text-muted-foreground">
-                    Or continue with
-                  </span>
-                </div>
-              </div>
-
-              {/* Login Form */}
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="email">Email</Label>
-                  <Input
-                    id="email"
-                    type="email"
-                    placeholder="name@example.com"
-                    value={formData.email}
-                    onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                    required
-                    className="h-11"
-                  />
-                </div>
-
-                <div className="space-y-2">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="password">Password</Label>
-                    <Link
-                      href="/forgot-password"
-                      className="text-sm text-accent hover:underline"
-                    >
-                      Forgot password?
-                    </Link>
-                  </div>
-                  <div className="relative">
-                    <Input
-                      id="password"
-                      type={showPassword ? "text" : "password"}
-                      placeholder="Enter your password"
-                      value={formData.password}
-                      onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                      required
-                      className="h-11 pr-10"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="absolute right-3 top-1/2 -translate-y-1/2 text-muted-foreground hover:text-foreground"
-                    >
-                      {showPassword ? (
-                        <EyeOff className="w-4 h-4" />
-                      ) : (
-                        <Eye className="w-4 h-4" />
-                      )}
-                    </button>
-                  </div>
-                </div>
-
-                <Button
-                  type="submit"
-                  className="w-full h-11 bg-foreground text-background hover:bg-foreground/90"
-                  disabled={isLoading}
-                >
-                  {isLoading ? (
-                    <motion.div
-                      className="w-5 h-5 border-2 border-background/30 border-t-background rounded-full"
-                      animate={{ rotate: 360 }}
-                      transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
-                    />
-                  ) : (
-                    <>
-                      Sign in
-                      <ArrowRight className="w-4 h-4 ml-2" />
-                    </>
+              {/* Error Message */}
+              {(error || errorParam) && (
+                <div className="p-3 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm">
+                  {error || (errorParam === "OAuthAccountNotLinked" 
+                    ? "This email is already associated with another account."
+                    : "An error occurred during sign in. Please try again."
                   )}
-                </Button>
-              </form>
+                </div>
+              )}
+
+              {/* Google Login */}
+              <Button
+                variant="outline"
+                className="w-full h-12 text-base"
+                onClick={handleGoogleLogin}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <motion.div
+                    className="w-5 h-5 border-2 border-foreground/30 border-t-foreground rounded-full"
+                    animate={{ rotate: 360 }}
+                    transition={{ duration: 1, repeat: Infinity, ease: "linear" }}
+                  />
+                ) : (
+                  <>
+                    <Chrome className="w-5 h-5 mr-3" />
+                    Continue with Google
+                    <ArrowRight className="w-4 h-4 ml-auto" />
+                  </>
+                )}
+              </Button>
+
+              <div className="text-center text-sm text-muted-foreground">
+                <p>
+                  By signing in, you agree to our{" "}
+                  <Link href="/terms" className="text-accent hover:underline">
+                    Terms of Service
+                  </Link>{" "}
+                  and{" "}
+                  <Link href="/privacy" className="text-accent hover:underline">
+                    Privacy Policy
+                  </Link>
+                </p>
+              </div>
 
               <p className="text-center text-sm text-muted-foreground">
                 Don&apos;t have an account?{" "}
