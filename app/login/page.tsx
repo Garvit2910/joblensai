@@ -22,12 +22,12 @@ export default function LoginPage() {
     setIsLoading(true);
     setError(null);
     
-    try {
-      await signIn("google", { callbackUrl });
-    } catch {
-      setError("Failed to initiate Google login. Please try again.");
-      setIsLoading(false);
-    }
+    // signIn will redirect to Google OAuth, so we don't need try/catch
+    // The redirect happens automatically and the function doesn't return
+    await signIn("google", { 
+      callbackUrl,
+      redirect: true,
+    });
   };
 
   return (

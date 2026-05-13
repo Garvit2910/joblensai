@@ -16,12 +16,12 @@ export default function RegisterPage() {
     setIsLoading(true);
     setError(null);
     
-    try {
-      await signIn("google", { callbackUrl: "/upload" });
-    } catch {
-      setError("Failed to initiate Google signup. Please try again.");
-      setIsLoading(false);
-    }
+    // signIn will redirect to Google OAuth, so we don't need try/catch
+    // The redirect happens automatically and the function doesn't return
+    await signIn("google", { 
+      callbackUrl: "/upload",
+      redirect: true,
+    });
   };
 
   return (
